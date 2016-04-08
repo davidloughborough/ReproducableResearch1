@@ -1,0 +1,96 @@
+---
+title: "Activity Monitoring"
+output: html_document
+---
+
+First, we must load in the data that we will be analyzing for this project.  It contains data for one person's activity taken every 5 minutes over the course of 2 months.
+
+```{r}
+activity <- read.csv("~/Desktop/activity.csv")
+```
+
+We want to analyze the data for daily step count, but first we must compile the data into steps per day instead of over the intervals. After making this variable, let's check out a histogram for the data.
+
+```{r}
+stepsperday <- aggregate(steps~date,activity,sum)
+hist(stepsperday$steps, xlab = "Steps per Day", ylab = "Days")
+```
+
+Now lets see the mean and median for the steps per day data.
+
+```{r}
+meansteps <- mean(stepsperday$steps, na.rm = TRUE)
+mediansteps <- median(stepsperday$steps, na.rm = TRUE)
+meansteps
+meansteps
+```
+
+Next, we are going to look at the average number of steps per interval through viewing time series data.  First, this means creating a new variable for average steps per interval over all days. Next, create a plot with average steps on the y-axis and interval on the x-axis.
+
+```{r}
+stepsperinterval <- aggregate(steps ~ interval, data=activity, FUN=mean)
+plot(stepsperinterval, type="l",xlab="Intervals", ylab="Average Steps per Interval")
+```
+
+Now we would like to see in which interval on average this person takes the most steps.
+
+```{r}
+stepsperinterval$interval[which.max(stepsperinterval$steps)]
+```
+
+Many of the intervals show up as NA for steps, so we would like to know how many of these intervals have no data.
+
+```{r}
+sum(is.na(activity))
+```
+
+Now we need to fill in information for the NA values. For this we can use the average number of steps for that given interval instead of showing NA.
+
+```{r}
+withNA = merge (activity, stepsperinterval, by="interval")
+withNA$steps.x[is.na(withNA$steps.x)] = withNA$steps.y[is.na(withNA$steps.x)]
+```
+
+Let's take a look at the data's distribution, as well as the mean and median once the missing values are imputed.
+
+```{r}
+withNA <- aggregate(steps.x~interval, withNA,sum)
+hist(withNA$steps.x, xlab="Steps per Day", ylab="Days")
+meanNA <- mean(withNA$steps, na.rm=TRUE)
+medianNA <- median(withNA$steps, na.rm=TRUE)
+meanNA
+medianNA
+```
+
+Both the mean and median went down from over 10,000 steps per day to now just over 2,000 steps.  This can be seen also in the shifting of the histogram.
+
+Next, let's look how this person's activity varied over the weekdays and weekends. We need to start by making a variable to describe each day.
+
+```{r}
+week_diff <- aggregate(
+  steps~dow+interval,  
+  with(
+    activity,
+    data.frame(
+      dow = factor(
+        ifelse(
+          weekdays(as.Date(date)) %in% c("Sunday","Saturday"),
+          "weekend",
+          "weekday"
+        )
+      ),
+      interval,
+      steps
+    )
+  ),
+  FUN = mean,
+  rm.na = TRUE
+)
+```
+
+Now that we have a data set breaking the days into weekdays and weekends, let's check out a plot of the data.
+
+```{r}
+library(ggplot2)
+ggplot(week_diff,aes(x=interval,y=steps)) + geom_line() + facet_grid("dow ~ .") +  ggtitle("Number of Steps Based on Time of the Week")
+```
