@@ -91,5 +91,6 @@ week_diff <- aggregate(
 Now that we have a data set breaking the days into weekdays and weekends, let's check out a plot of the data.
 
 ```{r}
+library(ggplot2)
 ggplot(week_diff,aes(x=interval,y=steps)) + geom_line() + facet_grid("dow ~ .") +  ggtitle("Number of Steps Based on Time of the Week")
 ```
